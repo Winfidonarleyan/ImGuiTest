@@ -29,7 +29,8 @@ target_link_libraries(WarheadController
   PRIVATE
     warhead-core-interface
   PUBLIC
-    common)
+    common
+    "dl")
 
 CollectIncludeDirectories(
   ${CMAKE_CURRENT_SOURCE_DIR}

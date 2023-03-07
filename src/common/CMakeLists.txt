@@ -46,8 +46,8 @@ target_link_libraries(common
     utf8cpp
     threads
     fmt
-    sdl2
-    vulkan
+#    sdl2
+    opengl
     glfw)
 
 # Install dynamic lib

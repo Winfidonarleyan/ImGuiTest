@@ -13,13 +13,13 @@
 # This is done EACH compile so they can be alerted about the consequences.
 #
 
-find_package(Vulkan REQUIRED)
 find_package(SDL2 REQUIRED)
+find_package(OpenGL REQUIRED)
 
 # Find include files
 find_path(
         GLFW_INCLUDE_DIR
-        NAMES GLFW/glfw.h
+        NAMES GLFW/glfw3.h
         PATHS
         /usr/include
         /usr/local/include
@@ -31,7 +31,7 @@ find_path(
 # Try to use static libraries
 find_library(
         GLFW_LIBRARY
-        NAMES glfw3
+        NAMES glfw
         PATHS
         /usr/lib64
         /usr/lib
@@ -42,27 +42,31 @@ find_library(
         ${GLFW_ROOT_DIR}/lib
         DOC "The GLFW library")
 
-add_library(vulkan SHARED IMPORTED GLOBAL)
-add_library(sdl2 STATIC IMPORTED GLOBAL)
-add_library(glfw SHARED IMPORTED GLOBAL)
+#add_library(sdl2 SHARED IMPORTED GLOBAL)
+add_library(sdl2 INTERFACE)
+add_library(glfw INTERFACE)
+add_library(opengl INTERFACE)
 
-set_target_properties(vulkan
-  PROPERTIES
-    IMPORTED_LOCATION
-      "${Vulkan_LIBRARY}"
-    INTERFACE_INCLUDE_DIRECTORIES
-      "${Vulkan_INCLUDE_DIRS}")
+target_include_directories(sdl2 INTERFACE ${SDL2_INCLUDE_DIRS})
+target_link_libraries(sdl2 INTERFACE ${SDL2_LIBRARIES})
 
-set_target_properties(sdl2
-  PROPERTIES
-    IMPORTED_LOCATION
-      "${SDL2_LIBRARIES}"
-    INTERFACE_INCLUDE_DIRECTORIES
-      "${SDL2_INCLUDE_DIRS}")
+target_include_directories(glfw INTERFACE ${GLFW_INCLUDE_DIR})
+target_link_libraries(glfw INTERFACE ${GLFW_LIBRARY})
 
-set_target_properties(glfw
-  PROPERTIES
-    IMPORTED_LOCATION
-      "${GLFW_INCLUDE_DIR}"
-    INTERFACE_INCLUDE_DIRECTORIES
-      "${GLFW_LIBRARY}")
+#set_target_properties(sdl2
+#  PROPERTIES
+#    IMPORTED_LOCATION
+#      "${SDL2_LIBRARIES}"
+#    INTERFACE_INCLUDE_DIRECTORIES
+#      "${SDL2_INCLUDE_DIRS}")
+
+#set_target_properties(glfw
+#  PROPERTIES
+#    IMPORTED_LOCATION
+#      "${GLFW_LIBRARY}"
+#    INTERFACE_INCLUDE_DIRECTORIES
+#      "${GLFW_INCLUDE_DIR}")
+
+target_link_libraries(opengl
+  INTERFACE
+    OpenGL::OpenGL)
