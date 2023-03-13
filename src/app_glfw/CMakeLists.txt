@@ -23,9 +23,9 @@ CollectSourceFiles(
 GroupSources(${CMAKE_CURRENT_SOURCE_DIR})
 
 # Create the application project
-add_executable(WarheadController ${PRIVATE_SOURCES})
+add_executable(ImGuiTestGLFW ${PRIVATE_SOURCES})
 
-target_link_libraries(WarheadController
+target_link_libraries(ImGuiTestGLFW
   PRIVATE
     warhead-core-interface
   PUBLIC
@@ -36,16 +36,16 @@ CollectIncludeDirectories(
   ${CMAKE_CURRENT_SOURCE_DIR}
   PUBLIC_INCLUDES)
 
-target_include_directories(WarheadController
+target_include_directories(ImGuiTestGLFW
   PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR})
 
-target_include_directories(WarheadController
+target_include_directories(ImGuiTestGLFW
   PUBLIC
     ${PUBLIC_INCLUDES})
 
 if (UNIX)
-  install(TARGETS WarheadController DESTINATION bin)
+  install(TARGETS ImGuiTestGLFW DESTINATION bin)
 elseif (WIN32)
-  install(TARGETS WarheadController DESTINATION "${CMAKE_INSTALL_PREFIX}")
+  install(TARGETS ImGuiTestGLFW DESTINATION "${CMAKE_INSTALL_PREFIX}")
 endif()

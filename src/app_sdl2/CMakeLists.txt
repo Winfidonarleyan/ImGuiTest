@@ -15,41 +15,37 @@
 # with this program. If not, see <http://www.gnu.org/licenses/>.
 #
 
+# Get all source files
 CollectSourceFiles(
   ${CMAKE_CURRENT_SOURCE_DIR}
   PRIVATE_SOURCES)
 
-# Group sources
 GroupSources(${CMAKE_CURRENT_SOURCE_DIR})
 
-add_definitions(-DWARHEAD_API_EXPORT_COMMON)
+# Create the application project
+add_executable(ImGuiSDL2 ${PRIVATE_SOURCES})
 
-add_library(common
-  ${PRIVATE_SOURCES})
+target_link_libraries(ImGuiSDL2
+  PRIVATE
+    warhead-core-interface
+  PUBLIC
+    common
+    "dl")
 
 CollectIncludeDirectories(
   ${CMAKE_CURRENT_SOURCE_DIR}
   PUBLIC_INCLUDES)
 
-target_include_directories(common
+target_include_directories(ImGuiSDL2
   PUBLIC
-    # Provide the binary dir for all child targets
-    ${CMAKE_BINARY_DIR}
-    ${PUBLIC_INCLUDES}
-  PRIVATE
-    ${CMAKE_CURRENT_BINARY_DIR})
+    ${CMAKE_CURRENT_SOURCE_DIR})
 
-target_link_libraries(common
-  PRIVATE
-    warhead-core-interface
+target_include_directories(ImGuiSDL2
   PUBLIC
-    utf8cpp
-    threads
-    fmt
-    sdl2
-    opengl
-    glfw
-    freetype)
+    ${PUBLIC_INCLUDES})
 
-# Install dynamic lib
-InstallDynamicLibrary(common)
+if (UNIX)
+  install(TARGETS ImGuiSDL2 DESTINATION bin)
+elseif (WIN32)
+  install(TARGETS ImGuiSDL2 DESTINATION "${CMAKE_INSTALL_PREFIX}")
+endif()

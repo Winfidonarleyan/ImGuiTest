@@ -3,10 +3,6 @@
 // If you are new to Dear ImGui, read documentation from the docs/ folder + read the top of imgui.cpp.
 // Read online: https://github.com/ocornut/imgui/tree/master/docs
 
-#include <fmt/format.h>
-#include <unordered_map>
-#include <list>
-
 #include "imgui.h"
 #include "imgui_internal.h"
 #include "imgui_impl_glfw.h"
@@ -17,6 +13,9 @@
 #include <GLES2/gl2.h>
 #endif
 #include <GLFW/glfw3.h> // Will drag system OpenGL headers
+
+#include "imgui_stdlib.h"
+#include "Common.h"
 
 // [Win32] Our example includes a copy of glfw3.lib pre-compiled with VS2010 to maximize ease of testing and compatibility with old VS compilers.
 // To link with VS2010-era libraries, VS2015+ requires linking with legacy_stdio_definitions.lib, which we do using this pragma.
@@ -33,19 +32,6 @@
 static void glfw_error_callback(int error, const char* description)
 {
     fprintf(stderr, "GLFW Error %d: %s\n", error, description);
-}
-
-namespace
-{
-    constexpr auto GENERAL_WINDOW_WIDTH = 1920;
-    constexpr auto GENERAL_WINDOW_HEIGHT = 1080;
-
-    constexpr auto TEST_WINDOW_NAME_FMT = "Test window {:d}";
-    constexpr auto TEST_WINDOW_SIZE_X = 140;
-    constexpr auto TEST_WINDOW_SIZE_Y = 50;
-
-    constexpr auto MAX_WINDOWS_IN_ROW = GENERAL_WINDOW_WIDTH / TEST_WINDOW_SIZE_X;
-//    constexpr auto MAX_WINDOWS_IN_ROW = 20;
 }
 
 // Main code
@@ -79,7 +65,6 @@ int main(int, char**)
 #endif
 
     // Create window with graphics context
-//    GLFWwindow* window = glfwCreateWindow(1280, 720, "Dear ImGui GLFW+OpenGL3 example", NULL, NULL);
     GLFWwindow* window = glfwCreateWindow(GENERAL_WINDOW_WIDTH, GENERAL_WINDOW_HEIGHT, "Dear ImGui GLFW + OpenGL3 example", nullptr, nullptr);
     if (!window)
         return 1;
@@ -91,7 +76,7 @@ int main(int, char**)
     IMGUI_CHECKVERSION();
     ImGui::CreateContext();
     ImGuiIO& io = ImGui::GetIO(); (void)io;
-    //io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;     // Enable Keyboard Controls
+    io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;     // Enable Keyboard Controls
     //io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;      // Enable Gamepad Controls
 
     // Setup Dear ImGui style
@@ -113,9 +98,10 @@ int main(int, char**)
     // - Our Emscripten build process allows embedding fonts to be accessible at runtime from the "fonts/" folder. See Makefile.emscripten for details.
     //io.Fonts->AddFontDefault();
     //io.Fonts->AddFontFromFileTTF("c:\\Windows\\Fonts\\segoeui.ttf", 18.0f);
-    //io.Fonts->AddFontFromFileTTF("../../misc/fonts/DroidSans.ttf", 16.0f);
-    //io.Fonts->AddFontFromFileTTF("../../misc/fonts/Roboto-Medium.ttf", 16.0f);
-    //io.Fonts->AddFontFromFileTTF("../../misc/fonts/Cousine-Regular.ttf", 15.0f);
+
+    // Default
+    io.Fonts->AddFontFromFileTTF("/usr/share/fonts/truetype/roboto/hinted/Roboto-Bold.ttf", 16.0f, nullptr, io.Fonts->GetGlyphRangesCyrillic());
+
     //ImFont* font = io.Fonts->AddFontFromFileTTF("c:\\Windows\\Fonts\\ArialUni.ttf", 18.0f, NULL, io.Fonts->GetGlyphRangesJapanese());
     //IM_ASSERT(font != NULL);
 
@@ -124,41 +110,10 @@ int main(int, char**)
     bool show_another_window = false;
     ImVec4 clear_color = ImVec4(0.45f, 0.55f, 0.60f, 1.00f);
 
-    auto PrintTestWindows = [&io](std::size_t count)
-    {
-        if (!count)
-            return;
-
-        for (std::size_t index{}; index < count;)
-        {
-            if (index)
-            {
-                if (auto window = ImGui::FindWindowByName(fmt::format(TEST_WINDOW_NAME_FMT, index).c_str()))
-                {
-                    if (index % MAX_WINDOWS_IN_ROW == 0)
-                        ImGui::SetNextWindowPos(ImVec2(window->Pos.x - (TEST_WINDOW_SIZE_X * (MAX_WINDOWS_IN_ROW - 1)), window->Pos.y + TEST_WINDOW_SIZE_Y), ImGuiCond_FirstUseEver);
-                    else
-                        ImGui::SetNextWindowPos(ImVec2(window->Pos.x + TEST_WINDOW_SIZE_X, window->Pos.y /*+ TEST_WINDOW_SIZE_Y*/), ImGuiCond_FirstUseEver);
-
-                    ImGui::SetNextWindowSize(ImVec2(TEST_WINDOW_SIZE_X, TEST_WINDOW_SIZE_Y), ImGuiCond_FirstUseEver);
-                }
-            }
-            else
-            {
-                // We specify a default position/size in case there's no data in the .ini file.
-                // We only do it to make the demo applications a little more welcoming, but typically this isn't required.
-                const ImGuiViewport* main_viewport = ImGui::GetMainViewport();
-                ImGui::SetNextWindowPos(ImVec2(main_viewport->WorkPos.x, main_viewport->WorkPos.y + 197), ImGuiCond_FirstUseEver);
-                ImGui::SetNextWindowSize(ImVec2(TEST_WINDOW_SIZE_X, TEST_WINDOW_SIZE_Y), ImGuiCond_FirstUseEver);
-            }
-
-            index++;
-
-            ImGui::Begin(fmt::format(TEST_WINDOW_NAME_FMT, index).c_str(), nullptr, ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize);
-            ImGui::Text("%s", fmt::format("Framerate: {:0.2f}", io.Framerate).c_str());
-            ImGui::End();
-        }
-    };
+    auto realCurrTime = 0ms;
+    auto realPrevTime = GetTimeMS();
+    bool showWindows{};
+    bool showLogWindow{};
 
     // Main loop
 #ifdef __EMSCRIPTEN__
@@ -170,6 +125,8 @@ int main(int, char**)
     while (!glfwWindowShouldClose(window))
 #endif
     {
+        realCurrTime = GetTimeMS();
+
         // Poll and handle events (inputs, window resize, etc.)
         // You can read the io.WantCaptureMouse, io.WantCaptureKeyboard flags to tell if dear imgui wants to use your inputs.
         // - When io.WantCaptureMouse is true, do not dispatch mouse input data to your main application, or clear/overwrite your copy of the mouse data.
@@ -188,48 +145,44 @@ int main(int, char**)
 
         // 2. Show a simple window that we create ourselves. We use a Begin/End pair to create a named window.
         {
-            static float minFps = 0.0f;
-            static float maxFps = 0.0f;
-
             // We specify a default position/size in case there's no data in the .ini file.
             // We only do it to make the demo applications a little more welcoming, but typically this isn't required.
             const ImGuiViewport* main_viewport = ImGui::GetMainViewport();
             ImGui::SetNextWindowPos(ImVec2(main_viewport->WorkPos.x, main_viewport->WorkPos.y), ImGuiCond_FirstUseEver);
-            ImGui::SetNextWindowSize(ImVec2(350, 150), ImGuiCond_FirstUseEver);
+            ImGui::SetNextWindowSize(ImVec2(350, 200), ImGuiCond_FirstUseEver);
 
             // Create a window called "Hello, world!" and append into it.
-            ImGui::Begin("Test config", nullptr, ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize);
-
-            // Display some text (you can use a format strings too)
-            ImGui::Text("This is some useful text.");
+            ImGui::Begin("Тестирование ImGui", nullptr, ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize);
 
             // Edit bools storing our window open/close state
-            ImGui::Checkbox("Demo Window", &show_demo_window);
+            ImGui::Checkbox("Демо окно", &show_demo_window);
+            ImGui::Checkbox("Тестовое окно", &showWindows);
+            ImGui::Checkbox("Окно с логами", &showLogWindow);
 
-            static int windowsCount = 13;
-            ImGui::InputInt("Windows count", &windowsCount);
+            static int windowsCount = 100;
+//            ImGui::InputInt("Windows count", &windowsCount);
 
-            ImGui::SliderInt("Windows count clider", &windowsCount, 0, 220);
+            ImGui::SliderInt("Windows count slider", &windowsCount, 0, 100000);
 
-            if (ImGui::Button("Clear all"))                            // Buttons return true when clicked (most widgets return true when edited/activated)
+            if (ImGui::Button("Clear all")) // Buttons return true when clicked (most widgets return true when edited/activated)
                 windowsCount = 0;
 
             ImGui::SameLine();
-            ImGui::Text("counter = %d", windowsCount);
+            ImGui::Text("Count = %d", windowsCount);
 
             auto framerate = io.Framerate;
+            auto diff = GetMSTimeDiff(realPrevTime, realCurrTime);
+            realPrevTime = realCurrTime;
 
-            if (minFps < 1.f || minFps > framerate)
-                minFps = framerate;
-
-            if (maxFps < 1.f || maxFps < framerate)
-                maxFps = framerate;
-
-//            ImGui::Text("Application average %.3f ms/frame (%.2f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
-            ImGui::Text("FPS: min/max: %.2f/%.2f", minFps, maxFps);
+            ImGui::Text("Application average %.3f ms/frame (%.2f FPS)", 1000.0f / framerate, framerate);
+            ImGui::Text("Diff: %ld", diff.count());
             ImGui::End();
 
-            PrintTestWindows(windowsCount);
+            if (showWindows)
+                PrintTestWindows(io, windowsCount);
+
+            if (showLogWindow)
+                PrintLogWindow();
         }
 
         // 3. Show another simple window.

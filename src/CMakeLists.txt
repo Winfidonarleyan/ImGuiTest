@@ -15,4 +15,5 @@
 # with this program. If not, see <http://www.gnu.org/licenses/>.
 #
 
-add_subdirectory(app)
+add_subdirectory(app_glfw)
+add_subdirectory(app_sdl2)

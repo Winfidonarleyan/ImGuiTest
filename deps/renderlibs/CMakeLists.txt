@@ -15,6 +15,7 @@
 
 find_package(SDL2 REQUIRED)
 find_package(OpenGL REQUIRED)
+find_package(Freetype REQUIRED)
 
 # Find include files
 find_path(
@@ -42,10 +43,10 @@ find_library(
         ${GLFW_ROOT_DIR}/lib
         DOC "The GLFW library")
 
-#add_library(sdl2 SHARED IMPORTED GLOBAL)
 add_library(sdl2 INTERFACE)
 add_library(glfw INTERFACE)
 add_library(opengl INTERFACE)
+add_library(freetype INTERFACE)
 
 target_include_directories(sdl2 INTERFACE ${SDL2_INCLUDE_DIRS})
 target_link_libraries(sdl2 INTERFACE ${SDL2_LIBRARIES})
@@ -53,19 +54,9 @@ target_link_libraries(sdl2 INTERFACE ${SDL2_LIBRARIES})
 target_include_directories(glfw INTERFACE ${GLFW_INCLUDE_DIR})
 target_link_libraries(glfw INTERFACE ${GLFW_LIBRARY})
 
-#set_target_properties(sdl2
-#  PROPERTIES
-#    IMPORTED_LOCATION
-#      "${SDL2_LIBRARIES}"
-#    INTERFACE_INCLUDE_DIRECTORIES
-#      "${SDL2_INCLUDE_DIRS}")
-
-#set_target_properties(glfw
-#  PROPERTIES
-#    IMPORTED_LOCATION
-#      "${GLFW_LIBRARY}"
-#    INTERFACE_INCLUDE_DIRECTORIES
-#      "${GLFW_INCLUDE_DIR}")
+target_link_libraries(freetype
+  INTERFACE
+    Freetype::Freetype)
 
 target_link_libraries(opengl
   INTERFACE
